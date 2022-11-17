@@ -13,17 +13,17 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         try {
             const userId = req.params.user;
             const body = {
-                rows: []
+                userId: userId,
+                companies: []
             }
             context.log('Executing DB statement for user_id = ' + req.query['userId']);
-            for await (const row of statement.execute([userId])) {
+            for (const row of await statement.execute([userId])) {
                 const record = {
-                    userId: row.get('user_id'),
                     companyCode: row.get('vfs_company_code'),
                     recordSource: row.get('record_source')
                 };
                 context.log('Record: ' + record);
-                body.rows.push(record);
+                body.companies.push(record);
             }
 
             context.log('Preparing response.');
