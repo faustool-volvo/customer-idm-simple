@@ -13,6 +13,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         try {
             const userId = req.params.user;
             const body = {
+                count: 0,
                 users: []
             }
             context.log('Executing DB statement for user_id = ' + req.query['userId']);
@@ -23,6 +24,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 };
                 body.users.push(record);
             }
+            body.count = body.users.length;
 
             context.log('Preparing response.');
             context.res = {
