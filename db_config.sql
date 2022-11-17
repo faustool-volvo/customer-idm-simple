@@ -12,5 +12,4 @@ values ('user1', 'rsA', 'company1');
 insert into customeridm.user_company_relation(user_id, record_source, vfs_company_code)
 values ('user2', 'rsA', 'company1');
 
-
 commit;
