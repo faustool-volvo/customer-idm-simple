@@ -1,0 +1,21 @@
+{
+  "entryPoint": "run",
+  "bindings": [
+    {
+      "authLevel": "function",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "get"
+      ],
+      "route": "mem/users/{user}/companies/{company}"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    }
+  ],
+  "scriptFile": "../dist/memauthusertocustomer/index.js"
+}

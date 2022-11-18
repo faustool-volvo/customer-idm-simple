@@ -6,36 +6,32 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     context.log('Acquiring DB connection.');
     const client = await pool.acquire();
     try {
-        const statement = await client.prepare(
-            'select user_id, count(*) as company_count from customeridm.user_company_relation group by user_id'
-        );
-
-        try {
-            const userId = req.params.user;
-            const body = {
-                count: 0,
-                users: []
-            }
-            context.log('Executing DB statement for user_id = ' + req.query['userId']);
-            for (const row of await statement.execute([userId])) {
-                const record = {
-                    userId: row.get('user_id'),
-                    companyCount: Number((row.get('company_count') as BigInt))
-                };
-                body.users.push(record);
-            }
-            body.count = body.users.length;
-
-            context.log('Preparing response.');
+        const { error, rows } = await pool.query('select user_id, count(*) as company_count from customeridm.user_company_relation group by user_id');
+        if (error) {
+            console.log(error);
             context.res = {
-                // status: 200, /* Defaults to 200 */
-                body: body
+                status: 500, /* Defaults to 200 */
+                body: {
+                    message: "Internal error"
+                }
             };
-        } finally {
-            context.log('Closing DB statement.');
-            statement.close();
         }
-
+        const userId = req.params.user;
+        const body = {
+            count: 0,
+            users: []
+        }
+        rows.array.forEach(row => {
+            const record = {
+                userId: row['user_id'],
+                companyCount: Number((row['company_count'] as BigInt))
+            };
+            body.users.push(record);
+        });
+        context.res = {
+            // status: 200, /* Defaults to 200 */
+            body: body
+        };
     } finally {
         context.log('Releasing DB connection.');
         pool.release(client);
