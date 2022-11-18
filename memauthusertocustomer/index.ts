@@ -29,6 +29,7 @@ class MemCacheFunction {
                     message: 'Not ready'
                 }
             };
+            return;
         }
         const userId = req.params.user;
         const companyCode = req.params.company;
