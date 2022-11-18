@@ -1,7 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions";
-import { Pool, Client } from 'pg';
-
-const pool = new Pool();
+import { pool } from '../common_pg';
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     context.log('HTTP trigger function processed a request.');
