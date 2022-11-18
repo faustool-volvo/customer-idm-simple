@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions";
-import { Client, SSLMode } from "ts-postgres";
+import { Client } from "pg";
 import schedule = require('node-schedule');
 
 class MemCacheFunction {
@@ -7,34 +7,15 @@ class MemCacheFunction {
 
     async loadCache() {
         console.log("Loading cache");
-        const client = new Client({
-            host: process.env.pg_host,
-            port: parseInt(process.env.pg_port),
-            database: process.env.pg_db,
-            user: process.env.pg_user,
-            password: process.env.pg_pass,
-            keepAlive: true,
-            ssl: SSLMode.Disable
-        });
-        console.log("Preparing statement");
-        const statement = await client.prepare('select concat(user_id, vfs_company_code, record_source) from customeridm.user_company_relation');
-        try {
-            console.log("Executing statement...");
-            const result = await statement.execute();
-            console.log("Statement completed.");
-            this.cache = new Set(result.rows.map(row => {
-                const key = row[0].toString();
-                console.log("Adding " + key);
-                return key;
-                
-            }));
-        } finally {
-            console.log("Cache loaded");
-            statement.close();
-        }
+        const client = new Client()
+        await client.connect()
+        const res = await client.query('select concat(user_id, vfs_company_code, record_source) as concat from customeridm.user_company_relation');
+        this.cache = new Set(res.rows.map((row: any[]) => row['concat']));
+        console.log("Cache loaded");
     }
 
     constructor() {
+        this.loadCache();
         console.log("Scheduling load every 5 minutes");
         schedule.scheduleJob('*/5 * * * *', this.loadCache);
     }
@@ -42,7 +23,12 @@ class MemCacheFunction {
     async run(context: Context, req: HttpRequest): Promise<void> {
         context.log('HTTP trigger function processed a request.');
         if (!this.cache) {
-            await this.loadCache();
+            context.res = {
+                status: 500,
+                body: {
+                    message: 'Not ready'
+                }
+            };
         }
         const userId = req.params.user;
         const companyCode = req.params.company;
