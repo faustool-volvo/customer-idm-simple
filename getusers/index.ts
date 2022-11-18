@@ -11,13 +11,11 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         );
 
         try {
-            const userId = req.params.user;
             const body = {
                 count: 0,
                 users: []
             }
-            context.log('Executing DB statement for user_id = ' + req.query['userId']);
-            for (const row of await statement.execute([userId])) {
+            for (const row of await statement.execute()) {
                 const record = {
                     userId: row.get('user_id'),
                     companyCount: Number((row.get('company_count') as BigInt))
