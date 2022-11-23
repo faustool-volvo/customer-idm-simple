@@ -1,6 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import { randomInt, randomUUID } from "crypto";
-import { pool } from '../common_pg';
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
 
@@ -21,27 +20,38 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     }
 
-    context.log('Acquiring DB connection.');
-    pool.acquire().then((client) => {
-        client.prepare('insert into customeridm.user_company_relation(user_id, vfs_company_code, record_source) values ($1, $2, $3)').then((statement) => {
+    const { Client } = require('pg')
+    const client = new Client();
+
+    client
+        .connect()
+        .then(() => {
             const statementExecutions = [];
-            userIds.forEach((userId) => {
-                const userCompanyCount = randomInt(50);
+            userIds.forEach(userId => {
+                const userCompanyCount = randomInt(companyCodesCount) + 1;
+                const codesUsed: boolean[] = [];
                 for (let j = 0; j < userCompanyCount; j++) {
-                    const company = companyCodes[randomInt(companyCodesCount)];
-                    statementExecutions.push(statement.execute([userId, company.code, company.recordSource]).catch((error) => {
+                    let companyIndex = 0;
+                    do {
+                        companyIndex = randomInt(companyCodesCount);
+                    } while (codesUsed[companyIndex])
+                    codesUsed[companyIndex] = true;
+                    const company = companyCodes[companyIndex];
+                    const query = {
+                        // give the query a unique name
+                        name: 'insert-user-company-relation',
+                        text: 'insert into customeridm.user_company_relation(user_id, vfs_company_code, record_source) values ($1, $2, $3)',
+                        values: [userId, company.code, company.recordSource],
+                    }
+                    statementExecutions.push(client.query(query).catch(error => {
                         console.log(`Error inserting userId=${userId},companyCode=${company.code},recordSource=${company.recordSource}: ${error.message}`);
                     }));
                 }
-            })
+            });
             Promise.all(statementExecutions).finally(() => {
-                statement.close();
-                pool.release(client);
+                client.end();
             })
-        }).catch(() => {
-            pool.release(client);
-        });
-    });
+        })
 };
 
 export default httpTrigger;

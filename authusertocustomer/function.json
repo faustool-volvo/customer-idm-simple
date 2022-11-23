@@ -1,4 +1,5 @@
 {
+  "entryPoint": "run",
   "bindings": [
     {
       "authLevel": "function",

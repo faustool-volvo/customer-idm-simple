@@ -1,44 +1,39 @@
-import { AzureFunction, Context, HttpRequest } from "@azure/functions";
-import { pool } from '../common_pg';
+import { Context, HttpRequest } from "@azure/functions";
+import { Pool } from "pg";
+import { handleError } from '../common/handle_error'
 
-const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-    context.log('HTTP trigger function processed a request.');
-    context.log('Acquiring DB connection.');
-    const client = await pool.acquire();
-    try {
-        const statement = await client.prepare(
-            'select user_id, count(*) as company_count from customeridm.user_company_relation group by user_id'
-        );
+class GetUsersFunction {
+    pool: Pool;
 
+    constructor() {
+        this.pool = new Pool();
+    }
+
+    async run(context: Context, req: HttpRequest): Promise<void> {
+        context.log('HTTP trigger function processed a request.');
+        context.log('Acquiring DB connection.');
         try {
+            const { rows } = await this.pool.query('select user_id, count(*) as company_count from customeridm.user_company_relation group by user_id');
             const body = {
                 count: 0,
                 users: []
             }
-            for (const row of await statement.execute()) {
+            rows.forEach(row => {
                 const record = {
-                    userId: row.get('user_id'),
-                    companyCount: Number((row.get('company_count') as BigInt))
+                    userId: row.user_id,
+                    companyCount: row.company_count
                 };
                 body.users.push(record);
-            }
+            });
             body.count = body.users.length;
-
-            context.log('Preparing response.');
             context.res = {
-                // status: 200, /* Defaults to 200 */
                 body: body
-            };
-        } finally {
-            context.log('Closing DB statement.');
-            statement.close();
+            }
+        } catch (error) {
+            handleError(error, context);
         }
-
-    } finally {
-        context.log('Releasing DB connection.');
-        pool.release(client);
     }
-    context.log('Done.');
-};
+}
 
-export default httpTrigger;
+const func = new GetUsersFunction();
+module.exports = func;

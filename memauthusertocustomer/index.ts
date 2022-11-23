@@ -1,8 +1,8 @@
-import { AzureFunction, Context, HttpRequest } from "@azure/functions";
+import { Context, HttpRequest } from "@azure/functions";
 import { Client } from "pg";
 import schedule = require('node-schedule');
 
-class MemCacheFunction {
+class MemAuthUserCustomerFunction {
     cache: Set<string>;
 
     async loadCache() {
@@ -10,7 +10,7 @@ class MemCacheFunction {
         const client = new Client()
         await client.connect()
         const res = await client.query('select concat(user_id, vfs_company_code, record_source) as concat from customeridm.user_company_relation');
-        this.cache = new Set(res.rows.map((row: any[]) => row['concat']));
+        this.cache = new Set(res.rows.map((row) => row['concat']));
         console.log("Cache loaded");
     }
 
@@ -45,5 +45,5 @@ class MemCacheFunction {
     }
 }
 
-const func = new MemCacheFunction()
+const func = new MemAuthUserCustomerFunction()
 module.exports = func;
