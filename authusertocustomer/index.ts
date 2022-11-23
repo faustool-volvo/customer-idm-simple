@@ -17,9 +17,15 @@ class AuthUserCustomerFunction {
         const companyCode = req.params.company;
         const recordSource = req.query.recordSource;
 
+        const query = {
+            name: 'auth-user-to-customer',
+            text: 'select 1 from customeridm.user_company_relation where user_id = $1 and vfs_company_code = $2 and record_source = $3',
+            values: [userId, companyCode, recordSource]
+        }
+
         try {
             context.log(`Executing DB statement for user_id = ${userId}, company_code = ${companyCode}, record_source = ${recordSource}`);
-            const { rows } = await this.pool.query('select 1 from customeridm.user_company_relation where user_id = $1 and vfs_company_code = $2 and record_source = $3', [userId, companyCode, recordSource]);
+            const { rows } = await this.pool.query(query);
             context.log('Preparing response.');
             context.res = {
                 // status: 200, /* Defaults to 200 */

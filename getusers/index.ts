@@ -2,6 +2,11 @@ import { Context, HttpRequest } from "@azure/functions";
 import { Pool } from "pg";
 import { handleError } from '../common/handle_error'
 
+const query = {
+    name: 'get-users',
+    text: 'select user_id, count(*) as company_count from customeridm.user_company_relation group by user_id'
+}
+
 class GetUsersFunction {
     pool: Pool;
 
@@ -13,7 +18,7 @@ class GetUsersFunction {
         context.log('HTTP trigger function processed a request.');
         context.log('Acquiring DB connection.');
         try {
-            const { rows } = await this.pool.query('select user_id, count(*) as company_count from customeridm.user_company_relation group by user_id');
+            const { rows } = await this.pool.query(query);
             const body = {
                 count: 0,
                 users: []

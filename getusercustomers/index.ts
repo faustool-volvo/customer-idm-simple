@@ -13,7 +13,12 @@ class GetUserCustomersFunction {
         context.log('HTTP trigger function processed a request.');
         try {
             const userId = req.params.user;
-            const { rows } = await this.pool.query('select user_id, vfs_company_code, record_source from customeridm.user_company_relation where user_id = $1', [userId])
+            const query = {
+                name: 'get-user-customers',
+                text: 'select user_id, vfs_company_code, record_source from customeridm.user_company_relation where user_id = $1',
+                values: [userId]
+            }
+            const { rows } = await this.pool.query(query);
 
             const body = {
                 userId: userId,
